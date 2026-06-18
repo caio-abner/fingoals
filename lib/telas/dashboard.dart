@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class TelaDashboard extends StatelessWidget {
-  // Criamos a variável para guardar a função recebida
-  final Function(int) aoMudarAba; 
+  final Function(int) aoMudarAba;
+  final List<Map<String, dynamic>> metas;
 
-  // Exigimos ela na hora de construir a tela
-  const TelaDashboard({super.key, required this.aoMudarAba});
+  const TelaDashboard({
+    super.key,
+    required this.aoMudarAba,
+    required this.metas, // A lista oficial recebida do main.dart
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Fundo quase branco, como no Figma
+      backgroundColor: const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0), // Espaçamento mais generoso
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. CABEÇALHO (Estilo Figma)
+            // 1. CABEÇALHO
             const Text(
               'Bem-vindo de volta!',
               style: TextStyle(color: Colors.grey, fontSize: 14),
@@ -34,7 +37,7 @@ class TelaDashboard extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: 'R\$ 15.400,00',
-                    style: TextStyle(color: Color(0xFF10B981)), // Verde esmeralda
+                    style: TextStyle(color: Color(0xFF10B981)),
                   ),
                 ],
               ),
@@ -56,10 +59,10 @@ class TelaDashboard extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               color: Colors.white,
-              elevation: 0, // Retira a sombra pesada para ficar "clean" como no Figma
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200), // Borda sutil
+                side: BorderSide(color: Colors.grey.shade200),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -99,14 +102,14 @@ class TelaDashboard extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // 3. MEUS OBJETIVOS
+            // 3. MINHAS METAS (100% DINÂMICO AGORA!)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('Meus Objetivos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Minhas Metas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     Text('Progresso dos seus principais objetivos', style: TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
@@ -117,32 +120,29 @@ class TelaDashboard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Row com Expanded para colocar os cartões lado a lado e responsivos
-            Row(
-              children: [
-                Expanded(
-                  child: _construirCartaoObjetivoFigma(
-                    titulo: 'Viagem para o Japão',
-                    data: 'Fev/2027',
-                    valorAtual: 9000,
-                    meta: 15000,
-                  ),
-                ),
-                const SizedBox(width: 16), // Espaço entre os cartões
-                Expanded(
-                  child: _construirCartaoObjetivoFigma(
-                    titulo: 'Lente para Câmera Sony',
-                    data: '',
-                    valorAtual: 1950,
-                    meta: 6500,
-                  ),
-                ),
-              ],
-            ),
+            
+            // Loop dinâmico que lê a lista e desenha no máximo os 2 primeiros cartões
+            if (metas.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Nenhuma meta cadastrada ainda.', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              Row(
+                children: metas.take(2).map((meta) {
+                  return Expanded(
+                    child: Padding(
+                      // Adiciona um espaço à direita do primeiro cartão, mas não do último
+                      padding: EdgeInsets.only(right: meta == metas.take(2).last ? 0 : 16.0),
+                      child: _construirCartaoObjetivoFigma(meta),
+                    ),
+                  );
+                }).toList(),
+              ),
 
             const SizedBox(height: 32),
 
-            // 4. MEU PORTFÓLIO (Estrutura Básica)
+            // 4. MEU PORTFÓLIO
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -167,7 +167,6 @@ class TelaDashboard extends StatelessWidget {
                 padding: const EdgeInsets.all(32.0),
                 child: Row(
                   children: [
-                    // GRÁFICO DE ROSCA
                     SizedBox(
                       height: 150, width: 150,
                       child: Stack(
@@ -181,7 +180,6 @@ class TelaDashboard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Texto no centro da rosca
                           Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -195,7 +193,6 @@ class TelaDashboard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 48),
-                    // INFORMAÇÕES LATERAIS
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +200,6 @@ class TelaDashboard extends StatelessWidget {
                           const Text('Valor Total Investido', style: TextStyle(color: Colors.grey, fontSize: 12)),
                           const Text('R\$ 15.400,00', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 24),
-                          // Bloquinhos de Renda Fixa e Variável
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
@@ -252,15 +248,13 @@ class TelaDashboard extends StatelessWidget {
     );
   }
 
-  // Função auxiliar para criar os cartões de objetivo idênticos ao Figma
-  Widget _construirCartaoObjetivoFigma({
-    required String titulo,
-    required String data,
-    required double valorAtual,
-    required double meta,
-  }) {
-    double progresso = valorAtual / meta;
+  // A função que desenha o cartão agora extrai as cores e ícones dinamicamente do objeto "meta"
+  Widget _construirCartaoObjetivoFigma(Map<String, dynamic> meta) {
+    double progresso = meta['valorObjetivo'] > 0 ? (meta['valorAtual'] / meta['valorObjetivo']) : 0;
     int porcentagem = (progresso * 100).toInt();
+
+    // Extrai a cor do mapa de forma segura
+    Color corTema = meta['cor'] ?? const Color(0xFF10B981);
 
     return Card(
       color: Colors.white,
@@ -277,17 +271,18 @@ class TelaDashboard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const CircleAvatar(
-                  radius: 12,
-                  backgroundColor: Color(0xFFE6F8F3),
-                  child: Icon(Icons.star, size: 12, color: Color(0xFF10B981)),
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: corTema.withOpacity(0.1),
+                  // Renderizando o ícone dinâmico escolhido pelo usuário!
+                  child: Icon(meta['icone'], size: 16, color: corTema),
                 ),
-                Text('$porcentagem%', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                Text('$porcentagem%', style: TextStyle(color: corTema, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              data.isNotEmpty ? '$titulo - $data' : titulo,
+              meta['titulo'], // Título dinâmico
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -296,7 +291,7 @@ class TelaDashboard extends StatelessWidget {
             LinearProgressIndicator(
               value: progresso,
               backgroundColor: Colors.grey[100],
-              color: const Color(0xFF10B981),
+              color: corTema,
               minHeight: 6,
               borderRadius: BorderRadius.circular(10),
             ),
@@ -308,14 +303,14 @@ class TelaDashboard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Valor atual', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                    Text('R\$ ${valorAtual.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    Text('R\$ ${meta['valorAtual'].toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text('Meta', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                    Text('R\$ ${meta.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    Text('R\$ ${meta['valorObjetivo'].toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   ],
                 ),
               ],
