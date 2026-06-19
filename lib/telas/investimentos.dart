@@ -54,15 +54,56 @@ class TelaInvestimentos extends StatelessWidget {
                             height: 300, // Altura do gráfico
                             child: LineChart(
                               LineChartData(
+                                // --- NOVA LÓGICA DO TOOLTIP (CAIXINHA AO PASSAR O MOUSE) ---
+                                lineTouchData: LineTouchData(
+                                  touchTooltipData: LineTouchTooltipData(
+                                    getTooltipColor: (touchedSpot) => Colors.white, // Fundo branco da caixinha
+                                    tooltipBorder: const BorderSide(color: Colors.black12, width: 1), // Borda suave
+                                    getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                                      return touchedSpots.map((LineBarSpot touchedSpot) {
+                                        const meses = ['Out', 'Nov', 'Dez', 'Jan', 'Fev', 'Mar'];
+                                        final mes = meses[touchedSpot.x.toInt()];
+                                        // Converte o valor (ex: 14.1) para formato de dinheiro (14.100,00)
+                                        final valorFormatado = (touchedSpot.y * 1000).toStringAsFixed(2).replaceAll('.', ',');
+
+                                        return LineTooltipItem(
+                                          '$mes\n',
+                                          const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 13),
+                                          children: [
+                                            TextSpan(
+                                              text: 'Valor : R\$ $valorFormatado',
+                                              style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.normal, fontSize: 12),
+                                            ),
+                                          ],
+                                        );
+                                      }).toList();
+                                    },
+                                  ),
+                                  // Customiza a linha vertical que desce até o eixo X
+                                  getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                                    return spotIndexes.map((index) {
+                                      return TouchedSpotIndicatorData(
+                                        const FlLine(color: Color(0xFF10B981), strokeWidth: 2, dashArray: [4, 4]), // Linha tracejada verde
+                                        FlDotData(
+                                          show: true,
+                                          getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                                            radius: 5, color: const Color(0xFF10B981), strokeWidth: 3, strokeColor: Colors.white,
+                                          ),
+                                        ), 
+                                      );
+                                    }).toList();
+                                  },
+                                ),
+                                // --- FIM DA NOVA LÓGICA ---
+
                                 gridData: FlGridData(
                                   show: true,
-                                  drawVerticalLine: false, // Tira linhas verticais do fundo
+                                  drawVerticalLine: false,
                                   getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
                                 ),
                                 titlesData: FlTitlesData(
-                                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  // Nomes dos meses embaixo
+                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                   bottomTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
@@ -78,7 +119,6 @@ class TelaInvestimentos extends StatelessWidget {
                                       },
                                     ),
                                   ),
-                                  // Valores em R$ na esquerda
                                   leftTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
@@ -95,15 +135,14 @@ class TelaInvestimentos extends StatelessWidget {
                                 minY: 0,
                                 maxY: 16,
                                 lineBarsData: [
-                                  // A LINHA DO GRÁFICO
                                   LineChartBarData(
                                     spots: const [
-                                      FlSpot(0, 12),
-                                      FlSpot(1, 13),
-                                      FlSpot(2, 13.5),
-                                      FlSpot(3, 13.8),
-                                      FlSpot(4, 14.5),
-                                      FlSpot(5, 15.4),
+                                      FlSpot(0, 12.5), // Ajustei levemente os pontos para bater mais com a sua imagem
+                                      FlSpot(1, 13.2),
+                                      FlSpot(2, 13.9),
+                                      FlSpot(3, 14.1),
+                                      FlSpot(4, 15.1),
+                                      FlSpot(5, 15.6),
                                     ],
                                     isCurved: false,
                                     color: const Color(0xFF10B981),

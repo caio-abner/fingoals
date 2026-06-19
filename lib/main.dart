@@ -1,13 +1,13 @@
-import 'dart:convert'; // Usado para converter dados para o banco
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // O Banco de Dados
+import 'package:shared_preferences/shared_preferences.dart';
 
-// IMPORTANDO SEUS ARQUIVOS REAIS MODULARIZADOS
 import 'telas/dashboard.dart';
 import 'telas/metas.dart';
 import 'telas/orcamento.dart';
 import 'telas/investimentos.dart';
 import 'telas/config.dart';
+import 'telas/landing_page.dart';
 
 void main() {
   runApp(const FinGoalsApp());
@@ -15,6 +15,12 @@ void main() {
 
 class FinGoalsApp extends StatelessWidget {
   const FinGoalsApp({super.key});
+
+  // Função que verifica no banco se o usuário já fez login antes
+  Future<bool> _verificarSessao() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('is_logged_in') ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +31,22 @@ class FinGoalsApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF10B981)),
         useMaterial3: true,
       ),
-      home: const NavegacaoPrincipal(),
+      // O FutureBuilder decide qual tela mostrar baseado no banco de dados!
+      home: FutureBuilder<bool>(
+        future: _verificarSessao(),
+        builder: (context, snapshot) {
+          // Enquanto está lendo o banco, mostra um loading verde
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF10B981))));
+          }
+          // Se estiver logado, vai direto pro Dashboard!
+          if (snapshot.data == true) {
+            return const NavegacaoPrincipal();
+          }
+          // Se não estiver logado, vai para a Landing Page
+          return const LandingPage();
+        },
+      ),
     );
   }
 }
@@ -42,8 +63,12 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
   bool _carregandoBanco = true; 
 
   List<Map<String, dynamic>> _metasGlobais = [];
+  
+  // --- NOVAS VARIÁVEIS DO PERFIL ---
+  String _nomeUsuario = 'Caio';
+  String _emailUsuario = 'caio@gmail.com';
+  String? _fotoPerfilBase64;
 
-  // 1. LISTA SEGURA DE CONSTANTES (Para o Tree Shaking do Flutter não reclamar)
   final List<IconData> _iconesDisponiveis = [
     Icons.star, Icons.flight_takeoff, Icons.directions_car, 
     Icons.home, Icons.laptop_mac, Icons.school, 
@@ -57,11 +82,16 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
     _carregarDoBancoDeDados(); 
   }
 
-  // --- LÓGICA DA BASE DE DADOS LOCAL ---
   Future<void> _carregarDoBancoDeDados() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? metasSalvas = prefs.getString('banco_metas');
+    
+    // 1. CARREGA O PERFIL
+    _nomeUsuario = prefs.getString('perfil_nome') ?? 'Caio';
+    _emailUsuario = prefs.getString('perfil_email') ?? 'caio@gmail.com';
+    _fotoPerfilBase64 = prefs.getString('perfil_foto');
 
+    // 2. CARREGA AS METAS (Seu código intacto)
+    final String? metasSalvas = prefs.getString('banco_metas');
     if (metasSalvas != null) {
       List<dynamic> decodificado = jsonDecode(metasSalvas);
       setState(() {
@@ -69,19 +99,15 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
           'titulo': item['titulo'],
           'valorAtual': item['valorAtual'],
           'valorObjetivo': item['valorObjetivo'],
-          
-          // 2. A MÁGICA: Pescamos o ícone constante da nossa lista segura em vez de criar um dinâmico!
           'icone': _iconesDisponiveis.firstWhere(
             (iconeConstante) => iconeConstante.codePoint == (item['icone'] as int),
-            orElse: () => Icons.star, // Segurança caso não encontre
+            orElse: () => Icons.star,
           ),
-          
           'cor': Color(item['cor'] as int),
         }).toList();
         _carregandoBanco = false;
       });
     } else {
-      // Se for a primeira vez abrindo a aplicação...
       setState(() {
         _metasGlobais = [
           {'titulo': 'Intercâmbio', 'valorAtual': 2000.0, 'valorObjetivo': 10000.0, 'icone': Icons.flight_takeoff, 'cor': Colors.blueAccent},
@@ -95,72 +121,79 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
 
   Future<void> _salvarNoBancoDeDados() async {
     final prefs = await SharedPreferences.getInstance();
-    // Converte nossos ícones e cores para formato de texto (JSON) que o celular entenda
     List<Map<String, dynamic>> paraSalvar = _metasGlobais.map((item) => {
       'titulo': item['titulo'],
       'valorAtual': item['valorAtual'],
       'valorObjetivo': item['valorObjetivo'],
-      'icone': item['icone'].codePoint, // Pega o código numérico do ícone
-      'cor': item['cor'].value,         // Pega o código hexadecimal da cor
+      'icone': item['icone'].codePoint, 
+      'cor': item['cor'].value,         
     }).toList();
-
     await prefs.setString('banco_metas', jsonEncode(paraSalvar));
   }
 
-  // --- FUNÇÕES DE COMUNICAÇÃO (CONTROLE REMOTO DAS TELAS) ---
-  void _adicionarMeta(Map<String, dynamic> novaMeta) {
+  // --- NOVA FUNÇÃO QUE A TELA DE CONFIGURAÇÕES VAI CHAMAR ---
+  Future<void> _atualizarPerfil(String nome, String email, String? fotoBase64) async {
     setState(() {
-      _metasGlobais.add(novaMeta);
+      _nomeUsuario = nome;
+      _emailUsuario = email;
+      _fotoPerfilBase64 = fotoBase64;
     });
-    _salvarNoBancoDeDados(); // Salva no banco sempre que uma meta nasce
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('perfil_nome', nome);
+    await prefs.setString('perfil_email', email);
+    if (fotoBase64 != null) {
+      await prefs.setString('perfil_foto', fotoBase64);
+    }
+  }
+
+  void _adicionarMeta(Map<String, dynamic> novaMeta) {
+    setState(() { _metasGlobais.add(novaMeta); });
+    _salvarNoBancoDeDados(); 
   }
 
   void _removerMeta(int index) {
-    setState(() {
-      _metasGlobais.removeAt(index);
-    });
-    _salvarNoBancoDeDados(); // Atualiza o banco sempre que apagamos
+    setState(() { _metasGlobais.removeAt(index); });
+    _salvarNoBancoDeDados(); 
   }
 
   void _aoClicarNaAba(int index) {
-    setState(() {
-      _abaSelecionada = index;
-    });
+    setState(() { _abaSelecionada = index; });
   }
 
   Widget _obterTela() {
-    // Se o banco ainda estiver carregando, mostra só um fundo limpo
     if (_carregandoBanco) return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
 
     switch (_abaSelecionada) {
-      case 0:
-        return TelaDashboard(aoMudarAba: _aoClicarNaAba, metas: _metasGlobais);
-      case 1:
-        return TelaMetas(metas: _metasGlobais, onAdicionar: _adicionarMeta, onRemover: _removerMeta);
-      case 2:
-        return const TelaOrcamento();
-      case 3:
-        return const TelaInvestimentos();
-      case 4:
-        return const TelaConfiguracoes();
-      default:
-        return TelaDashboard(aoMudarAba: _aoClicarNaAba, metas: _metasGlobais);
+      case 0: return TelaDashboard(aoMudarAba: _aoClicarNaAba, metas: _metasGlobais);
+      case 1: return TelaMetas(metas: _metasGlobais, onAdicionar: _adicionarMeta, onRemover: _removerMeta);
+      case 2: return const TelaOrcamento();
+      case 3: return const TelaInvestimentos();
+      case 4: 
+        // Passando as informações do perfil para a tela de configurações
+        return TelaConfiguracoes(
+          nome: _nomeUsuario, 
+          email: _emailUsuario, 
+          fotoBase64: _fotoPerfilBase64, 
+          onAtualizarPerfil: _atualizarPerfil,
+        );
+      default: return TelaDashboard(aoMudarAba: _aoClicarNaAba, metas: _metasGlobais);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Pegando as duas primeiras letras do nome para caso não tenha foto
+    String iniciais = _nomeUsuario.isNotEmpty 
+      ? (_nomeUsuario.length > 1 ? _nomeUsuario.substring(0, 2).toUpperCase() : _nomeUsuario.toUpperCase()) 
+      : 'US';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
         children: [
-          // MENU LATERAL (SIDEBAR)
           Container(
             width: 250,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(right: BorderSide(color: Colors.grey.shade200, width: 1)),
-            ),
+            decoration: BoxDecoration(color: Colors.white, border: Border(right: BorderSide(color: Colors.grey.shade200, width: 1))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -183,8 +216,9 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
                 _construirItemMenu(icone: Icons.settings_rounded, titulo: 'Configurações', index: 4),
 
                 const Spacer(),
-
                 Divider(height: 1, color: Colors.grey.shade200),
+                
+                // --- O MENU LATERAL AGORA É DINÂMICO ---
                 Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Row(
@@ -192,15 +226,21 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
                       CircleAvatar(
                         backgroundColor: Colors.grey.shade200,
                         radius: 18,
-                        child: const Text('CA', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
+                        // Se tiver foto no banco, mostra a foto. Senão, mostra nulo e desenha as letras.
+                        backgroundImage: _fotoPerfilBase64 != null ? MemoryImage(base64Decode(_fotoPerfilBase64!)) : null,
+                        child: _fotoPerfilBase64 == null 
+                            ? Text(iniciais, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 13)) 
+                            : null,
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text('Caio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          Text('caio@gmail.com', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_nomeUsuario, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text(_emailUsuario, style: const TextStyle(color: Colors.grey, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -209,12 +249,7 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
             ),
           ),
           
-          Expanded(
-            child: Container(
-              color: const Color(0xFFF9FAFB),
-              child: _obterTela(),
-            ),
-          ),
+          Expanded(child: Container(color: const Color(0xFFF9FAFB), child: _obterTela())),
         ],
       ),
     );

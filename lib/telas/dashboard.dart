@@ -166,72 +166,132 @@ class TelaDashboard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(
-                      height: 150, width: 150,
-                      child: Stack(
+                    // ESQUERDA: O Gráfico estilo "Donut" e a legenda embaixo
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          PieChart(
-                            PieChartData(
-                              sectionsSpace: 0, centerSpaceRadius: 40,
-                              sections: [
-                                PieChartSectionData(color: Colors.blueAccent, value: 55, title: '', radius: 30),
-                                PieChartSectionData(color: Colors.purpleAccent, value: 45, title: '', radius: 30),
-                              ],
+                          SizedBox(
+                            height: 180,
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 0, 
+                                centerSpaceRadius: 50, 
+                                startDegreeOffset: 270, 
+                                sections: [
+                                  PieChartSectionData(
+                                    color: const Color(0xFF3B82F6), 
+                                    value: 55, 
+                                    title: '55%', 
+                                    titleStyle: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 16),
+                                    radius: 25,
+                                    titlePositionPercentageOffset: 2.0, 
+                                  ),
+                                  PieChartSectionData(
+                                    color: const Color(0xFFA855F7), 
+                                    value: 45, 
+                                    title: '45%', 
+                                    titleStyle: const TextStyle(color: Color(0xFFA855F7), fontWeight: FontWeight.bold, fontSize: 16),
+                                    radius: 25,
+                                    // AUMENTAMOS O OFFSET AQUI TAMBÉM
+                                    titlePositionPercentageOffset: 2.2, 
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text('100%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                Text('Total', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                              ],
-                            ),
+                          const SizedBox(height: 24),
+                          // A legendazinha abaixo do gráfico
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(width: 12, height: 12, color: const Color(0xFF3B82F6)),
+                              const SizedBox(width: 6),
+                              const Text('Renda Fixa', style: TextStyle(color: Colors.black87, fontSize: 13)),
+                              const SizedBox(width: 16),
+                              Container(width: 12, height: 12, color: const Color(0xFFA855F7)),
+                              const SizedBox(width: 6),
+                              const Text('Renda Variável', style: TextStyle(color: Colors.black87, fontSize: 13)),
+                            ],
                           )
                         ],
                       ),
                     ),
                     const SizedBox(width: 48),
+                    
+                    // DIREITA: Informações detalhadas com os cartões coloridos
                     Expanded(
+                      flex: 6,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Valor Total Investido', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                          const Text('R\$ 15.400,00', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                          const Text('Valor Total Investido', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          const Text('R\$ 15.400,00', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 24),
+                          
+                          // Cartão Renda Fixa
                           Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF), // Fundo azul bem claro
+                              borderRadius: BorderRadius.circular(12)
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
-                                    Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(4))),
-                                    const SizedBox(width: 12),
-                                    const Text('Renda Fixa', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    Container(
+                                      width: 40, height: 40, 
+                                      decoration: BoxDecoration(color: const Color(0xFF3B82F6), borderRadius: BorderRadius.circular(10))
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text('Renda Fixa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                        Text('Tesouro, CDBs', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                                const Text('R\$ 8.500,00', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text('R\$ 8.500,00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
+                          
+                          // Cartão Renda Variável
                           Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFAF5FF), // Fundo roxo bem claro
+                              borderRadius: BorderRadius.circular(12)
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
-                                    Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.purpleAccent, borderRadius: BorderRadius.circular(4))),
-                                    const SizedBox(width: 12),
-                                    const Text('Renda Variável', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    Container(
+                                      width: 40, height: 40, 
+                                      decoration: BoxDecoration(color: const Color(0xFFA855F7), borderRadius: BorderRadius.circular(10))
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text('Renda Variável', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                        Text('ETFs, Ações', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                                const Text('R\$ 6.900,00', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text('R\$ 6.900,00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               ],
                             ),
                           ),
@@ -242,7 +302,7 @@ class TelaDashboard extends StatelessWidget {
                 ),
               ),
             )
-          ],
+          ], // <-- Fechamento da Column principal do Dashboard
         ),
       ),
     );
