@@ -156,6 +156,11 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
     _salvarNoBancoDeDados(); 
   }
 
+  void _editarMeta(int index, Map<String, dynamic> metaAtualizada) {
+    setState(() { _metasGlobais[index] = metaAtualizada; });
+    _salvarNoBancoDeDados();
+  }
+
   void _aoClicarNaAba(int index) {
     setState(() { _abaSelecionada = index; });
   }
@@ -165,7 +170,7 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
 
     switch (_abaSelecionada) {
       case 0: return TelaDashboard(aoMudarAba: _aoClicarNaAba, metas: _metasGlobais);
-      case 1: return TelaMetas(metas: _metasGlobais, onAdicionar: _adicionarMeta, onRemover: _removerMeta);
+      case 1: return TelaMetas(metas: _metasGlobais, onAdicionar: _adicionarMeta, onRemover: _removerMeta, onEditar: _editarMeta);
       case 2: return const TelaOrcamento();
       case 3: return const TelaInvestimentos();
       case 4: 

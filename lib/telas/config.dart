@@ -5,7 +5,6 @@ import 'landing_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TelaConfiguracoes extends StatefulWidget {
-  // A tela recebe os dados da mãe perfeitamente!
   final String nome;
   final String email;
   final String? fotoBase64;
@@ -25,6 +24,11 @@ class TelaConfiguracoes extends StatefulWidget {
 
 class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
   bool _modoEscuroAtivo = false; 
+
+  // Variáveis para dar a "Falsa Sensação" de controle das notificações
+  bool _alertaMetas = true;
+  bool _resumoSemanal = false;
+  bool _dicasFinanceiras = true;
 
   // --- LÓGICA 1: Formulário de Edição de Perfil ---
   void _abrirModalEdicaoPerfil(BuildContext context) {
@@ -122,7 +126,295 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
     );
   }
 
-  // --- LÓGICA 2: Simulação de Exportação de Dados ---
+  // --- LÓGICA 2: Notificações (Falsa Sensação de UX) ---
+  void _abrirModalNotificacoes(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('Preferências de Notificação', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  SwitchListTile(
+                    activeColor: const Color(0xFF10B981),
+                    title: const Text('Alertas de Metas', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Avisos quando você estiver perto de atingir um objetivo.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    value: _alertaMetas,
+                    onChanged: (bool valor) {
+                      setModalState(() => _alertaMetas = valor);
+                      setState(() => _alertaMetas = valor);
+                    },
+                  ),
+                  
+                  SwitchListTile(
+                    activeColor: const Color(0xFF10B981),
+                    title: const Text('Resumo Semanal', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Balanço dos seus gastos e receitas da semana.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    value: _resumoSemanal,
+                    onChanged: (bool valor) {
+                      setModalState(() => _resumoSemanal = valor);
+                      setState(() => _resumoSemanal = valor);
+                    },
+                  ),
+                  
+                  SwitchListTile(
+                    activeColor: const Color(0xFF10B981),
+                    title: const Text('Dicas Financeiras', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Sugestões e recomendações personalizadas do FinGoals.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    value: _dicasFinanceiras,
+                    onChanged: (bool valor) {
+                      setModalState(() => _dicasFinanceiras = valor);
+                      setState(() => _dicasFinanceiras = valor);
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferências de notificação salvas!'), backgroundColor: Color(0xFF10B981)));
+                        },
+                        child: const Text('Salvar Preferências', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            );
+          }
+        );
+      }
+    );
+  }
+
+  // --- LÓGICA 3: Menu de Segurança (Senha e 2FA) ---
+  void _abrirMenuSeguranca(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('Segurança da Conta', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.lock_outline, color: Colors.blueAccent),
+                title: const Text('Alterar Senha', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Troque a sua senha de acesso'),
+                onTap: () {
+                  Navigator.pop(context); // Fecha o menu
+                  _abrirModalTrocarSenha(context); // Abre o pop-up da senha
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.phonelink_lock, color: Color(0xFF10B981)),
+                title: const Text('Autenticação 2FA', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Configure uma camada extra de segurança'),
+                onTap: () {
+                  Navigator.pop(context); // Fecha o menu
+                  _abrirModal2FA(context); // Abre o nosso pop-up de 2FA
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  void _abrirModalTrocarSenha(BuildContext context) {
+    final TextEditingController senhaAtualController = TextEditingController();
+    final TextEditingController novaSenhaController = TextEditingController();
+    final TextEditingController confirmarSenhaController = TextEditingController();
+    bool carregando = false;
+    String mensagemErro = '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Alterar Senha', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (mensagemErro.isNotEmpty) ...[
+                      Text(mensagemErro, style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                    ],
+                    TextField(controller: senhaAtualController, obscureText: true, decoration: InputDecoration(labelText: 'Senha Atual', prefixIcon: const Icon(Icons.lock_outline), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                    const SizedBox(height: 12),
+                    TextField(controller: novaSenhaController, obscureText: true, decoration: InputDecoration(labelText: 'Nova Senha', prefixIcon: const Icon(Icons.lock), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                    const SizedBox(height: 12),
+                    TextField(controller: confirmarSenhaController, obscureText: true, decoration: InputDecoration(labelText: 'Confirmar Nova Senha', prefixIcon: const Icon(Icons.check_circle_outline), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                  onPressed: carregando ? null : () async {
+                    setStateDialog(() { mensagemErro = ''; carregando = true; });
+                    if (senhaAtualController.text.isEmpty || novaSenhaController.text.isEmpty || confirmarSenhaController.text.isEmpty) {
+                      setStateDialog(() { mensagemErro = 'Preencha todos os campos.'; carregando = false; });
+                      return;
+                    }
+                    if (novaSenhaController.text != confirmarSenhaController.text) {
+                      setStateDialog(() { mensagemErro = 'As senhas não coincidem.'; carregando = false; });
+                      return;
+                    }
+
+                    final prefs = await SharedPreferences.getInstance();
+                    String? usersJson = prefs.getString('auth_users');
+                    if (usersJson != null) {
+                      Map<String, dynamic> usuarios = jsonDecode(usersJson);
+                      if (usuarios.containsKey(widget.email) && usuarios[widget.email]['senha'] == senhaAtualController.text) {
+                        usuarios[widget.email]['senha'] = novaSenhaController.text;
+                        await prefs.setString('auth_users', jsonEncode(usuarios));
+                        if (context.mounted) {
+                          Navigator.pop(context); 
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Senha atualizada com sucesso!'), backgroundColor: Color(0xFF10B981)));
+                        }
+                      } else {
+                        setStateDialog(() { mensagemErro = 'A senha atual está incorreta.'; carregando = false; });
+                      }
+                    }
+                  },
+                  child: carregando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Salvar', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
+  void _abrirModal2FA(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    String? usersJson = prefs.getString('auth_users');
+    Map<String, dynamic> usuarios = jsonDecode(usersJson!);
+    
+    // Verifica se a pessoa já cadastrou um número antes
+    String telefoneSalvo = usuarios[widget.email]['telefone'] ?? '';
+    bool tem2FAAtivo = telefoneSalvo.isNotEmpty;
+
+    if (!context.mounted) return;
+
+    final TextEditingController telefoneController = TextEditingController(text: telefoneSalvo);
+    final TextEditingController codigoController = TextEditingController();
+    int etapa = tem2FAAtivo ? 2 : 0; // 0 = Cadastrar Num | 1 = Inserir Codigo | 2 = Já está Ativo
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Autenticação 2FA', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (etapa == 0) ...[
+                      const Text('Adicione um número de celular para receber códigos de segurança.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: telefoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(labelText: 'Celular (ex: 11987654321)', prefixIcon: const Icon(Icons.phone), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                      ),
+                    ],
+                    if (etapa == 1) ...[
+                      const Text('Simulamos o envio de um SMS para o seu celular. Insira um código qualquer de 4 dígitos para validar.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: codigoController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        decoration: InputDecoration(labelText: 'Código 2FA', prefixIcon: const Icon(Icons.message), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                      ),
+                    ],
+                    if (etapa == 2) ...[
+                      const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 64),
+                      const SizedBox(height: 16),
+                      Text('O 2FA está ativo para o número $telefoneSalvo.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      const Text('Você poderá usar isso caso esqueça a senha no futuro.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    ]
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar', style: TextStyle(color: Colors.grey))),
+                
+                if (etapa == 0)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                    onPressed: () {
+                      if (telefoneController.text.isNotEmpty) {
+                        setStateDialog(() => etapa = 1); // Avança para pedir o código
+                      }
+                    },
+                    child: const Text('Enviar Código SMS', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                
+                if (etapa == 1)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                    onPressed: () async {
+                      if (codigoController.text.length == 4) {
+                        // Guarda o celular na base de dados JSON!
+                        usuarios[widget.email]['telefone'] = telefoneController.text;
+                        await prefs.setString('auth_users', jsonEncode(usuarios));
+                        
+                        setStateDialog(() {
+                          telefoneSalvo = telefoneController.text;
+                          etapa = 2; // Sucesso!
+                        });
+                      }
+                    },
+                    child: const Text('Validar Código', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
+  // --- LÓGICA 4: Exportação (Com PT-BR Atualizado) ---
   void _simularExportacao(BuildContext context) {
     showDialog(
       context: context,
@@ -133,7 +425,7 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             children: [
               CircularProgressIndicator(color: Color(0xFF10B981)),
               SizedBox(width: 24),
-              Expanded(child: Text('A compilar os seus dados num ficheiro CSV...', style: TextStyle(fontWeight: FontWeight.w500))),
+              Expanded(child: Text('Compilando seus dados em um arquivo CSV...', style: TextStyle(fontWeight: FontWeight.w500))),
             ],
           ),
         );
@@ -148,7 +440,7 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 12),
-              Text('Relatório exportado e guardado nas suas Transferências!', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Relatório exportado e guardado nos seus Downloads!', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           backgroundColor: const Color(0xFF10B981),
@@ -174,7 +466,6 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
             TextButton(
               onPressed: () async {
-                // A MÁGICA DO LOGOUT: Avisamos o banco que a sessão acabou!
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('is_logged_in', false);
 
@@ -235,7 +526,6 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             const Text('Gerencie suas preferências e configurações', style: TextStyle(color: Colors.grey, fontSize: 14)),
             const SizedBox(height: 40),
 
-            // BOTÃO EDITAR PERFIL
             InkWell(
               onTap: () => _abrirModalEdicaoPerfil(context),
               borderRadius: BorderRadius.circular(12),
@@ -246,9 +536,14 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             ),
             const SizedBox(height: 16),
             
-            _construirCardConfiguracao(
-              icone: Icons.notifications_none, corIcone: const Color(0xFF10B981), corFundoIcone: const Color(0xFFE6F8F3),
-              titulo: 'Notificações', subtitulo: 'Gerencie suas preferências de notificações', trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            // O NOSSO BOTÃO DE NOTIFICAÇÕES AGORA É CLICÁVEL!
+            InkWell(
+              onTap: () => _abrirModalNotificacoes(context),
+              borderRadius: BorderRadius.circular(12),
+              child: _construirCardConfiguracao(
+                icone: Icons.notifications_none, corIcone: const Color(0xFF10B981), corFundoIcone: const Color(0xFFE6F8F3),
+                titulo: 'Notificações', subtitulo: 'Gerencie suas preferências de notificações', trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -265,19 +560,22 @@ class _TelaConfiguracoesState extends State<TelaConfiguracoes> {
             ),
             const SizedBox(height: 16),
 
-            _construirCardConfiguracao(
-              icone: Icons.shield_outlined, corIcone: const Color(0xFF10B981), corFundoIcone: const Color(0xFFE6F8F3),
-              titulo: 'Segurança', subtitulo: 'Altere sua senha e configure autenticação', trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            InkWell(
+              onTap: () => _abrirMenuSeguranca(context),
+              borderRadius: BorderRadius.circular(12),
+              child: _construirCardConfiguracao(
+                icone: Icons.shield_outlined, corIcone: const Color(0xFF10B981), corFundoIcone: const Color(0xFFE6F8F3),
+                titulo: 'Segurança', subtitulo: 'Altere sua senha e configure autenticação', trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              ),
             ),
             const SizedBox(height: 16),
 
-            // BOTÃO EXPORTAR DADOS
             InkWell(
               onTap: () => _simularExportacao(context),
               borderRadius: BorderRadius.circular(12),
               child: _construirCardConfiguracao(
                 icone: Icons.file_download_outlined, corIcone: Colors.blueAccent, corFundoIcone: Colors.blue.shade50,
-                titulo: 'Exportar Dados', subtitulo: 'Descarregue o seu histórico em formato CSV', trailing: const Icon(Icons.download, color: Colors.grey),
+                titulo: 'Exportar Dados', subtitulo: 'Descarregue seu histórico em formato CSV', trailing: const Icon(Icons.download, color: Colors.grey),
               ),
             ),
 

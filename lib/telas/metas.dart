@@ -4,12 +4,14 @@ class TelaMetas extends StatefulWidget {
   final List<Map<String, dynamic>> metas;
   final Function(Map<String, dynamic>) onAdicionar;
   final Function(int) onRemover;
+  final Function(int, Map<String, dynamic>) onEditar; // Nova função recebida da mãe!
 
   const TelaMetas({
     super.key, 
     required this.metas, 
     required this.onAdicionar, 
     required this.onRemover,
+    required this.onEditar,
   });
 
   @override
@@ -17,18 +19,15 @@ class TelaMetas extends StatefulWidget {
 }
 
 class _TelaMetasState extends State<TelaMetas> {
-  // A lista _metas sumiu daqui! Agora usamos widget.metas
-
-  final TextEditingController _tituloController = TextEditingController();
-  final TextEditingController _valorObjetivoController = TextEditingController();
+  final List<IconData> opcoesIcones = [
+    Icons.star, Icons.flight_takeoff, Icons.directions_car, 
+    Icons.home, Icons.laptop_mac, Icons.school, 
+    Icons.favorite, Icons.fitness_center, Icons.videogame_asset,
+  ];
 
   void _abrirFormularioNovaMeta(BuildContext context) {
-    final List<IconData> opcoesIcones = [
-      Icons.star, Icons.flight_takeoff, Icons.directions_car, 
-      Icons.home, Icons.laptop_mac, Icons.school, 
-      Icons.favorite, Icons.fitness_center, Icons.videogame_asset,
-    ];
-    
+    final TextEditingController tituloController = TextEditingController();
+    final TextEditingController valorObjetivoController = TextEditingController();
     IconData iconeSelecionado = opcoesIcones[0]; 
 
     showModalBottomSheet(
@@ -36,9 +35,6 @@ class _TelaMetasState extends State<TelaMetas> {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-        // 2. StatefulBuilder permite que o modal mude visualmente ao clicarmos nos ícones
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
@@ -53,21 +49,20 @@ class _TelaMetasState extends State<TelaMetas> {
                   const Text('Nova Meta', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: _tituloController,
+                    controller: tituloController,
                     decoration: const InputDecoration(labelText: 'Qual o seu objetivo? (Ex: Carro Novo)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: _valorObjetivoController,
+                    controller: valorObjetivoController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: 'Valor da Meta (R\$)'),
                   ),
                   const SizedBox(height: 24),
                   
-                  // 3. A GALERIA DE ÍCONES
                   const Text('Escolha um ícone:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 12),
-                  Wrap( // O Wrap quebra a linha automaticamente se faltar espaço
+                  Wrap(
                     spacing: 12,
                     runSpacing: 12,
                     children: opcoesIcones.map((icone) {
@@ -75,25 +70,16 @@ class _TelaMetasState extends State<TelaMetas> {
                       return InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          // setModalState atualiza a tela do formulário para piscar a nova cor
-                          setModalState(() {
-                            iconeSelecionado = icone;
-                          });
+                          setModalState(() => iconeSelecionado = icone);
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isSelected ? const Color(0xFF10B981).withOpacity(0.2) : Colors.grey.shade100,
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFF10B981) : Colors.transparent,
-                              width: 2,
-                            ),
+                            border: Border.all(color: isSelected ? const Color(0xFF10B981) : Colors.transparent, width: 2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            icone, 
-                            color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade600,
-                          ),
+                          child: Icon(icone, color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade600),
                         ),
                       );
                     }).toList(),
@@ -105,17 +91,14 @@ class _TelaMetasState extends State<TelaMetas> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
                       onPressed: () {
-                        if (_tituloController.text.isNotEmpty && _valorObjetivoController.text.isNotEmpty) {
-                          // A MUDANÇA É AQUI: Chamamos widget.onAdicionar!
+                        if (tituloController.text.isNotEmpty && valorObjetivoController.text.isNotEmpty) {
                           widget.onAdicionar({
-                            'titulo': _tituloController.text,
+                            'titulo': tituloController.text,
                             'valorAtual': 0.0,
-                            'valorObjetivo': double.tryParse(_valorObjetivoController.text) ?? 1000.0,
+                            'valorObjetivo': double.tryParse(valorObjetivoController.text.replaceAll(',', '.')) ?? 1000.0,
                             'icone': iconeSelecionado,
-                            'cor': const Color(0xFF10B981), // Mantendo verdinho padrão, ou a cor que preferir
+                            'cor': const Color(0xFF10B981), 
                           });
-                          _tituloController.clear();
-                          _valorObjetivoController.clear();
                           Navigator.pop(context);
                         }
                       },
@@ -128,6 +111,110 @@ class _TelaMetasState extends State<TelaMetas> {
             );
           },
         );
+      },
+    );
+  }
+
+  // --- NOVA LÓGICA: EDITAR META ---
+  void _abrirFormularioEditarMeta(BuildContext context, int index, Map<String, dynamic> metaAtual) {
+    final TextEditingController tituloController = TextEditingController(text: metaAtual['titulo']);
+    final TextEditingController valorObjetivoController = TextEditingController(text: metaAtual['valorObjetivo'].toStringAsFixed(2).replaceAll('.', ','));
+    final TextEditingController valorAtualController = TextEditingController(text: metaAtual['valorAtual'].toStringAsFixed(2).replaceAll('.', ','));
+    IconData iconeSelecionado = metaAtual['icone']; 
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24, right: 24, top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Editar Meta', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: tituloController,
+                    decoration: const InputDecoration(labelText: 'Qual o seu objetivo?'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: valorAtualController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Já guardado (R\$)'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: valorObjetivoController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Valor Total (R\$)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  const Text('Escolha um ícone:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: opcoesIcones.map((icone) {
+                      bool isSelected = iconeSelecionado == icone;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          setModalState(() => iconeSelecionado = icone);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF10B981).withOpacity(0.2) : Colors.grey.shade100,
+                            border: Border.all(color: isSelected ? const Color(0xFF10B981) : Colors.transparent, width: 2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(icone, color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade600),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                      onPressed: () {
+                        if (tituloController.text.isNotEmpty && valorObjetivoController.text.isNotEmpty) {
+                          widget.onEditar(index, {
+                            'titulo': tituloController.text,
+                            'valorAtual': double.tryParse(valorAtualController.text.replaceAll(',', '.')) ?? metaAtual['valorAtual'],
+                            'valorObjetivo': double.tryParse(valorObjetivoController.text.replaceAll(',', '.')) ?? metaAtual['valorObjetivo'],
+                            'icone': iconeSelecionado,
+                            'cor': metaAtual['cor'], 
+                          });
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: const Text('Salvar Alterações', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
           },
         );
       },
@@ -141,7 +228,7 @@ class _TelaMetasState extends State<TelaMetas> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Excluir Meta?', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: const Text('Tem certeza que deseja remover esta meta? Essa ação não pode ser desfeita.'),
+          content: const Text('Tem certeza que deseja excluir esta meta? Essa ação não pode ser desfeita.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -149,7 +236,6 @@ class _TelaMetasState extends State<TelaMetas> {
             ),
             TextButton(
               onPressed: () {
-                // AQUI ESTÁ A CORREÇÃO! Usamos a função que veio do main.dart
                 widget.onRemover(index); 
                 Navigator.of(context).pop();
               },
@@ -181,18 +267,13 @@ class _TelaMetasState extends State<TelaMetas> {
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, crossAxisSpacing: 24, mainAxisSpacing: 24, childAspectRatio: 1.4,
               ),
-              // Lemos a lista que veio por parâmetro!
               itemCount: widget.metas.length, 
               itemBuilder: (context, index) {
-                final meta = widget.metas[index]; // Lemos da widget.metas
+                final meta = widget.metas[index]; 
                 return _construirCaixinhaMeta(
                   context: context,
                   index: index, 
-                  titulo: meta['titulo'],
-                  valorAtual: meta['valorAtual'],
-                  valorObjetivo: meta['valorObjetivo'],
-                  icone: meta['icone'],
-                  corDestaque: meta['cor'],
+                  meta: meta, // Passando o objeto inteiro agora
                 );
               },
             ),
@@ -209,10 +290,14 @@ class _TelaMetasState extends State<TelaMetas> {
   }
 
   Widget _construirCaixinhaMeta({
-    required BuildContext context, required int index, required String titulo, 
-    required double valorAtual, required double valorObjetivo, 
-    required IconData icone, required Color corDestaque,
+    required BuildContext context, required int index, required Map<String, dynamic> meta
   }) {
+    String titulo = meta['titulo'];
+    double valorAtual = meta['valorAtual'];
+    double valorObjetivo = meta['valorObjetivo'];
+    IconData icone = meta['icone'];
+    Color corDestaque = meta['cor'];
+    
     double progresso = valorObjetivo > 0 ? (valorAtual / valorObjetivo) : 0;
 
     return Card(
@@ -247,12 +332,23 @@ class _TelaMetasState extends State<TelaMetas> {
             ),
           ),
           
+          // Lápis de Edição
+          Positioned(
+            top: 8, right: 40,
+            child: IconButton(
+              icon: const Icon(Icons.edit, color: Colors.grey, size: 18),
+              onPressed: () => _abrirFormularioEditarMeta(context, index, meta),
+              tooltip: 'Editar Meta',
+            ),
+          ),
+
+          // Lixeira de Exclusão
           Positioned(
             top: 8, right: 8,
             child: IconButton(
               icon: const Icon(Icons.close, color: Colors.grey, size: 18),
               onPressed: () => _confirmarRemocao(context, index),
-              tooltip: 'Remover Meta',
+              tooltip: 'Excluir Meta',
             ),
           ),
         ],
