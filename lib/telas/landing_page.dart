@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // <-- Adicionado para ler o banco
+import '../main.dart'; // <-- Adicionado para acessar o NavegacaoPrincipal
 import 'login.dart';
 
 class LandingPage extends StatelessWidget {
@@ -19,7 +21,7 @@ class LandingPage extends StatelessWidget {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.track_changes, color: Color(0xFF10B981), size: 32),
+                      Icon(Icons.gps_fixed, color: Color(0xFF10B981), size: 32),
                       SizedBox(width: 12),
                       Text('FinGoals', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     ],
@@ -49,7 +51,7 @@ class LandingPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      'A sua nova vida financeira começa aqui',
+                      'A sua nova vida financeira começa aqui!',
                       style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -124,11 +126,26 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // Função que faz o redirecionamento seguro para a área logada
-  void _fazerLogin(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const TelaLogin()),
-    );
+  // --- NOVA LÓGICA DE REDIRECIONAMENTO INTELIGENTE ---
+  Future<void> _fazerLogin(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    bool estaLogado = prefs.getBool('is_logged_in') ?? false;
+
+    if (!context.mounted) return;
+
+    if (estaLogado) {
+      // Se o usuário já estiver logado, o botão joga ele direto pro Dashboard e limpa o histórico de telas
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const NavegacaoPrincipal()),
+        (Route<dynamic> route) => false,
+      );
+    } else {
+      // Se não estiver, vai normalmente para a tela de Login
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const TelaLogin()),
+      );
+    }
   }
 }

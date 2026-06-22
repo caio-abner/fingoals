@@ -16,7 +16,6 @@ void main() {
 class FinGoalsApp extends StatelessWidget {
   const FinGoalsApp({super.key});
 
-  // Função que verifica no banco se o usuário já fez login antes
   Future<bool> _verificarSessao() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('is_logged_in') ?? false;
@@ -31,19 +30,15 @@ class FinGoalsApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF10B981)),
         useMaterial3: true,
       ),
-      // O FutureBuilder decide qual tela mostrar baseado no banco de dados!
       home: FutureBuilder<bool>(
         future: _verificarSessao(),
         builder: (context, snapshot) {
-          // Enquanto está lendo o banco, mostra um loading verde
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF10B981))));
           }
-          // Se estiver logado, vai direto pro Dashboard!
           if (snapshot.data == true) {
             return const NavegacaoPrincipal();
           }
-          // Se não estiver logado, vai para a Landing Page
           return const LandingPage();
         },
       ),
@@ -64,7 +59,6 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
 
   List<Map<String, dynamic>> _metasGlobais = [];
   
-  // --- NOVAS VARIÁVEIS DO PERFIL ---
   String _nomeUsuario = 'Caio';
   String _emailUsuario = 'caio@gmail.com';
   String? _fotoPerfilBase64;
@@ -85,13 +79,12 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
   Future<void> _carregarDoBancoDeDados() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // 1. CARREGA O PERFIL
     _nomeUsuario = prefs.getString('perfil_nome') ?? 'Caio';
     _emailUsuario = prefs.getString('perfil_email') ?? 'caio@gmail.com';
-    _fotoPerfilBase64 = prefs.getString('perfil_foto');
+    _fotoPerfilBase64 = prefs.getString('perfil_foto_$_emailUsuario');
 
-    // 2. CARREGA AS METAS (Seu código intacto)
-    final String? metasSalvas = prefs.getString('banco_metas');
+    final String? metasSalvas = prefs.getString('banco_metas_$_emailUsuario');
+    
     if (metasSalvas != null) {
       List<dynamic> decodificado = jsonDecode(metasSalvas);
       setState(() {
@@ -111,7 +104,7 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
       setState(() {
         _metasGlobais = [
           {'titulo': 'Intercâmbio', 'valorAtual': 2000.0, 'valorObjetivo': 10000.0, 'icone': Icons.flight_takeoff, 'cor': Colors.blueAccent},
-          {'titulo': 'MacBook Pro', 'valorAtual': 3500.0, 'valorObjetivo': 14000.0, 'icone': Icons.laptop_mac, 'cor': Colors.purpleAccent},
+          {'titulo': 'Fiat Mobi', 'valorAtual': 15000.0, 'valorObjetivo': 72000.0, 'icone': Icons.directions_car, 'cor': Colors.redAccent},
         ];
         _carregandoBanco = false;
       });
@@ -128,10 +121,10 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
       'icone': item['icone'].codePoint, 
       'cor': item['cor'].value,         
     }).toList();
-    await prefs.setString('banco_metas', jsonEncode(paraSalvar));
+    
+    await prefs.setString('banco_metas_$_emailUsuario', jsonEncode(paraSalvar));
   }
 
-  // --- NOVA FUNÇÃO QUE A TELA DE CONFIGURAÇÕES VAI CHAMAR ---
   Future<void> _atualizarPerfil(String nome, String email, String? fotoBase64) async {
     setState(() {
       _nomeUsuario = nome;
@@ -140,9 +133,10 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('perfil_nome', nome);
-    await prefs.setString('perfil_email', email);
+    await prefs.setString('perfil_email', email); 
+    
     if (fotoBase64 != null) {
-      await prefs.setString('perfil_foto', fotoBase64);
+      await prefs.setString('perfil_foto_$email', fotoBase64);
     }
   }
 
@@ -174,7 +168,6 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
       case 2: return const TelaOrcamento();
       case 3: return const TelaInvestimentos();
       case 4: 
-        // Passando as informações do perfil para a tela de configurações
         return TelaConfiguracoes(
           nome: _nomeUsuario, 
           email: _emailUsuario, 
@@ -187,11 +180,68 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
 
   @override
   Widget build(BuildContext context) {
-    // Pegando as duas primeiras letras do nome para caso não tenha foto
     String iniciais = _nomeUsuario.isNotEmpty 
       ? (_nomeUsuario.length > 1 ? _nomeUsuario.substring(0, 2).toUpperCase() : _nomeUsuario.toUpperCase()) 
       : 'US';
 
+    // A MÁGICA DA RESPONSIVIDADE AQUI!
+    // Se a tela for menor que 800 pixels (celulares e tablets pequenos), vira mobile.
+    bool isMobile = MediaQuery.of(context).size.width < 800;
+
+    if (isMobile) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: InkWell(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const LandingPage()));
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.gps_fixed, color: Color(0xFF10B981), size: 24),
+                SizedBox(width: 8),
+                Text('FinGoals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+              ],
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.grey.shade200,
+                radius: 16,
+                backgroundImage: _fotoPerfilBase64 != null ? MemoryImage(base64Decode(_fotoPerfilBase64!)) : null,
+                child: _fotoPerfilBase64 == null 
+                    ? Text(iniciais, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 11)) 
+                    : null,
+              ),
+            )
+          ],
+        ),
+        body: Container(color: const Color(0xFFF9FAFB), child: _obterTela()),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _abaSelecionada,
+          onTap: _aoClicarNaAba,
+          type: BottomNavigationBarType.fixed, // Impede animações ruins e mantém a cor de fundo fixa
+          selectedItemColor: const Color(0xFF10B981),
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: true,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Resumo'),
+            BottomNavigationBarItem(icon: Icon(Icons.flag_rounded), label: 'Metas'),
+            BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Orçamento'),
+            BottomNavigationBarItem(icon: Icon(Icons.trending_up_rounded), label: 'Invest.'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Ajustes'),
+          ],
+        ),
+      );
+    }
+
+    // --- SE FOR WEB/PC, MANTÉM O MENU LATERAL EXATAMENTE COMO ESTAVA ---
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
@@ -202,14 +252,19 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.track_changes, color: Color(0xFF10B981), size: 28),
-                      SizedBox(width: 12),
-                      Text('FinGoals', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    ],
+                InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LandingPage()));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.gps_fixed, color: Color(0xFF10B981), size: 28),
+                        SizedBox(width: 12),
+                        Text('FinGoals', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -223,7 +278,6 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
                 const Spacer(),
                 Divider(height: 1, color: Colors.grey.shade200),
                 
-                // --- O MENU LATERAL AGORA É DINÂMICO ---
                 Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Row(
@@ -231,7 +285,6 @@ class _NavegacaoPrincipalState extends State<NavegacaoPrincipal> {
                       CircleAvatar(
                         backgroundColor: Colors.grey.shade200,
                         radius: 18,
-                        // Se tiver foto no banco, mostra a foto. Senão, mostra nulo e desenha as letras.
                         backgroundImage: _fotoPerfilBase64 != null ? MemoryImage(base64Decode(_fotoPerfilBase64!)) : null,
                         child: _fotoPerfilBase64 == null 
                             ? Text(iniciais, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 13)) 

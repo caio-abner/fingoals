@@ -212,7 +212,7 @@ class _TelaLoginState extends State<TelaLogin> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.track_changes, color: Color(0xFF10B981), size: 64),
+                Icon(Icons.gps_fixed, color: Color(0xFF10B981), size: 64),
                 const SizedBox(height: 24),
                 const Text('Bem-vindo de volta!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
