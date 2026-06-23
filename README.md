@@ -67,10 +67,10 @@ Certifique-se de ter o [Flutter SDK](https://docs.flutter.dev/get-started/instal
 
 ## 🔐 Acesso para Avaliação (Testes)
 
-Para facilitar a correção e exploração das funcionalidades do projeto pela docência, o aplicativo injeta automaticamente uma conta de testes no banco de dados local (`SharedPreferences`) logo na primeira inicialização. Essa conta já possui exemplos de metas (como "Fiat Mobi" e "Intercâmbio") para demonstrar a interface gráfica.
+Para facilitar a correção e exploração das funcionalidades do projeto pela docência, o aplicativo injeta automaticamente uma conta de testes no banco de dados local (`SharedPreferences`) logo na primeira inicialização. Essa conta já possui exemplos de metas, investimentos e orçamentos para demonstrar a interface gráfica.
 
 **Credenciais de Acesso Padrão:**
 * **E-mail:** `caio_abner@usp.br`
 * **Senha:** `1234`
 
-*(Nota: Sinta-se à vontade para utilizar esta conta de testes ou criar uma conta "novinha em folha" através da tela de Cadastro para testar a funcionalidade de isolamento de banco de dados).*
+*(Nota: Sinta-se à vontade para utilizar esta conta de testes ou criar uma conta nova através da tela de Cadastro para testar a funcionalidade de isolamento de banco de dados).*
