@@ -37,12 +37,38 @@ O aplicativo é estruturado através de uma navegação lateral adaptativa (Web-
 
 ---
 
+## 🚀 Como Executar o Projeto
+
+**Pré-requisitos:**
+Certifique-se de ter o [Flutter SDK](https://docs.flutter.dev/get-started/install) instalado e configurado na sua máquina.
+
+1. **Clone o repositório:**
+```bash
+   git clone [https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git](https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git)
+
+2. **Acesse a pasta do projeto:**
+```bash
+   cd NOME_DO_REPOSITORIO
+
+3. **Baixe as dependências do projeto:**
+```bash
+   flutter pub get
+
+4. **Execute o aplicativo:**
+```bash
+   flutter run
+
+(Dica: O projeto é responsivo e pode ser executado tanto no Chrome (Web) quanto em emuladores Android/iOS).
+
+---
+
 ## 🔐 Acesso para Avaliação (Testes)
 
-Para facilitar a correção e exploração das funcionalidades do projeto, o aplicativo injeta automaticamente uma conta de testes no banco de dados local (`SharedPreferences`) logo na primeira inicialização. Essa conta já possui exemplos para demonstrar a interface gráfica.
+Para facilitar a correção e exploração das funcionalidades do projeto pela docência, o aplicativo injeta automaticamente uma conta de testes no banco de dados local (SharedPreferences) logo na primeira inicialização. Essa conta já possui exemplos de metas (como "Fiat Mobi" e "Intercâmbio") para demonstrar a interface gráfica.
 
 **Credenciais de Acesso Padrão:**
-* **E-mail:** `caio_abner@usp.br`
-* **Senha:** `1234`
 
-*(Nota: Sinta-se à vontade para utilizar esta conta de testes ou criar uma conta "novinha em folha" através da tela de Cadastro para testar a funcionalidade de isolamento de banco de dados).*
+* E-mail: caio_abner@usp.br
+* Senha: 1234
+
+(Nota: Sinta-se à vontade para utilizar esta conta de testes ou criar uma conta "novinha em folha" através da tela de Cadastro para testar a funcionalidade de isolamento de banco de dados).
